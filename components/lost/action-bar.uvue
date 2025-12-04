@@ -1,0 +1,22 @@
+<template>
+  <view class="bar">
+    <button v-show="showApply" type="primary" class="btn" @click="$emit('apply')">申请认领</button>
+    <button v-show="showNav" class="btn" @click="$emit('nav')">导航</button>
+    <button v-show="showChat" class="btn" @click="$emit('chat')">平台内沟通</button>
+  </view>
+</template>
+
+<script lang="uts">
+export default {
+  props: {
+    showApply: { type: Boolean, default: true },
+    showNav: { type: Boolean, default: true },
+    showChat: { type: Boolean, default: false }
+  }
+}
+</script>
+
+<style scoped>
+.bar{display:flex;flex-direction:row;gap:10px;padding:12px;background:#ffffff}
+.btn{color:#27c29c;border-color:#27c29c}
+</style>

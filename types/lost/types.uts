@@ -1,0 +1,91 @@
+export type LostLocation = {
+  lng: number,
+  lat: number,
+  address: string
+}
+
+export type LostItem = {
+  id: string,
+  user_id: string,
+  kind: number,
+  type: string,
+  name: string,
+  brand: string,
+  features: Array<string>,
+  photos: Array<string>,
+  mode: number, // 0=失物,1=寻物
+  status: number, // 0=待认领,1=已认领,2=已失效
+  point_id?: string,
+  location: LostLocation,
+  time: Date,
+  quality: number,
+  remark?: string,
+  is_sensitive: boolean,
+  audit_status: number, // 0=免审,1=待审,2=通过,3=驳回
+  created_at: Date,
+  updated_at: Date
+}
+
+export type LostClaim = {
+  id: string,
+  item_id: string,
+  applicant_user_id: string,
+  name: string,
+  mobile: string,
+  proof_feature: string,
+  schedule_slot: string,
+  note?: string,
+  status: number, // 0=待线下确认,1=已确认,2=已取消,3=异常
+  confirmed_by?: string,
+  confirmed_at?: Date,
+  created_at: Date
+}
+
+export type LostPoint = {
+  id: string,
+  name: string,
+  location: LostLocation,
+  phone: string,
+  hours: string,
+  manager_user_id?: string,
+  enabled: boolean,
+  created_at: Date
+}
+
+export type LostSensitiveType = {
+  id: string,
+  type_path: Array<string>,
+  enabled: boolean,
+  created_at: Date
+}
+
+export type LostAudit = {
+  id: string,
+  item_id: string,
+  auditor_user_id: string,
+  result: number,
+  reason: string,
+  created_at: Date
+}
+
+export type LostConversation = {
+  id: string,
+  item_id: string,
+  participants: Array<string>,
+  created_at: Date,
+  closed: boolean
+}
+
+export type LostMessage = {
+  id: string,
+  conv_id?: string,
+  receiver_user_id: string,
+  sender_user_id: string,
+  type: number, // 0=系统,1=文本
+  title?: string,
+  content: string,
+  read: boolean,
+  created_at: Date
+}
+
+export type ApiResult<T> = { code: number, msg: string, data?: T }

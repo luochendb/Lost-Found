@@ -1,0 +1,40 @@
+<template>
+  <view class="bar">
+    <input class="search" :value="innerKeyword" placeholder="搜索名称/特征/地点" @input="onKeywordInput" />
+    <picker :range="typeOptions" @change="onTypeChange">
+      <view class="picker">{{ typeLabel }}</view>
+    </picker>
+  </view>
+</template>
+
+<script lang="uts">
+import { ref, computed } from 'vue'
+export default {
+  props: {
+    keyword: { type: String, default: '' },
+    typeIndex: { type: Number, default: 0 }
+  },
+  emits: ['change','update:keyword'],
+  setup(props: UTSJSONObject, ctx: SetupContext) {
+    const innerKeyword = ref<string>(String(props['keyword'] ?? ''))
+    const typeOptions = ref<Array<string>>(['全部类型','证件类','电子设备','衣物','随身物品','其他'])
+    const typeIndex = ref<number>(Number(props['typeIndex'] ?? 0))
+    const typeLabel = computed<string>(() => typeOptions.value[typeIndex.value])
+    function emitChange(): void {
+      ctx.emit('change', {
+        keyword: innerKeyword.value,
+        typeIndex: typeIndex.value
+      })
+    }
+    function onTypeChange(e:any): void { typeIndex.value = Number(e.detail.value); emitChange() }
+    function onKeywordInput(e:any): void { innerKeyword.value = String(e.detail.value ?? ''); ctx.emit('update:keyword', innerKeyword.value); emitChange() }
+    return { innerKeyword, typeOptions, typeIndex, typeLabel, onTypeChange, onKeywordInput }
+  }
+}
+</script>
+
+<style scoped>
+.bar{display:flex;flex-direction:row;gap:8px;padding:8px;background:#ffffff}
+.search{flex:1;border:1px solid #e6f4ea;padding:8px;border-radius:6px}
+.picker{padding:6px 10px;border:1px solid #e6f4ea;border-radius:6px}
+</style>

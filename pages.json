@@ -1,0 +1,138 @@
+{
+	"pages": [ 
+		{
+			"path": "pages/lost/home/index",
+			"style": { "navigationBarTitleText": "主页" }
+		},
+    {
+      "path": "pages/lost/search/index",
+      "style": { "navigationBarTitleText": "搜索" }
+    },
+		{
+			"path": "pages/lost/detail/index",
+			"style": { "navigationBarTitleText": "详情" }
+		},
+		{
+			"path": "pages/lost/publish/index",
+			"style": { "navigationBarTitleText": "发布" }
+		},
+		{
+			"path": "pages/lost/notice/index",
+			"style": { "navigationBarTitleText": "消息中心" }
+		},
+		{
+			"path": "pages/lost/user/index",
+			"style": { "navigationBarTitleText": "我的" }
+		},
+		{
+			"path": "pages/lost/audit/index",
+			"style": { "navigationBarTitleText": "审核中心" }
+		},
+		{
+			"path": "pages/lost/point/manage",
+			"style": { "navigationBarTitleText": "招领点管理" }
+		},
+		{
+			"path": "pages/lost/point/detail/index",
+			"style": { "navigationBarTitleText": "暂存点详情" }
+		},
+		{
+			"path": "pages/lost/list/index",
+			"style": { "navigationBarTitleText": "失物招领" }
+		},
+		{
+			"path": "pages/lost/all/index",
+			"style": { "navigationBarTitleText": "全部信息" }
+		},
+		{
+    "path": "uni_modules/uni-id-pages-x/pages/login/login",
+    "style": {
+        "enablePullDownRefresh": false,
+        "navigationBarTitleText": "登录账号"
+    }
+}
+,
+{
+    "path": "uni_modules/uni-id-pages-x/pages/userinfo/userinfo",
+    "style": {
+        "enablePullDownRefresh": false,
+        "navigationBarTitleText": "我的资料"
+    }
+}
+,
+{
+    "path": "uni_modules/uni-id-pages-x/pages/register/register",
+    "style": {
+        "enablePullDownRefresh": false,
+        "navigationBarTitleText": "注册"
+    }
+}
+,
+{
+    "path": "uni_modules/uni-id-pages-x/pages/retrieve/retrieve",
+    "style": {
+        "enablePullDownRefresh": false,
+        "navigationBarTitleText": "重置密码"
+    }
+}
+,
+{
+    "path": "uni_modules/uni-id-pages-x/pages/common/webview/webview",
+    "style": {
+        "enablePullDownRefresh": false,
+        "navigationBarTitleText": ""
+    }
+}
+,
+{
+    "path": "uni_modules/uni-id-pages-x/pages/userinfo/deactivate/deactivate",
+    "style": {
+        "enablePullDownRefresh": false,
+        "navigationBarTitleText": "注销账号"
+    }
+}
+,
+{
+    "path": "uni_modules/uni-id-pages-x/pages/userinfo/bindMobile/bindMobile",
+    "style": {
+        "enablePullDownRefresh": false,
+        "navigationBarTitleText": "绑定手机号码"
+    }
+}
+,
+{
+    "path": "uni_modules/uni-id-pages-x/pages/userinfo/setNickname/setNickname",
+    "style": {
+        "enablePullDownRefresh": false,
+        "navigationBarTitleText": "设置昵称",
+        "navigationStyle": "custom"
+    }
+}
+,
+{
+    "path": "uni_modules/uni-id-pages-x/pages/userinfo/realnameAuth/realnameAuth",
+    "style": {
+        "enablePullDownRefresh": false,
+        "navigationBarTitleText": "实名认证"
+    }
+}
+	],
+	"tabBar": {
+		"color": "#7fc8a9",
+		"selectedColor": "#27c29c",
+		"backgroundColor": "#FFFFFF",
+		"borderStyle": "black",
+		"list": [
+			{ "pagePath": "pages/lost/home/index", "text": "主页", "iconPath": "/static/logo.png", "selectedIconPath": "/static/logo.png" },
+			{ "pagePath": "pages/lost/notice/index", "text": "消息", "iconPath": "/static/logo.png", "selectedIconPath": "/static/logo.png" },
+			{ "pagePath": "pages/lost/user/index", "text": "我的", "iconPath": "/static/logo.png", "selectedIconPath": "/static/logo.png" }
+		]
+	},
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "校园失物招领",
+		"navigationBarBackgroundColor": "#FFFFFF",
+		"backgroundColor": "#FFFFFF"
+	},
+	"uniIdRouter": {}
+}

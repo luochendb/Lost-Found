@@ -1,0 +1,43 @@
+<template>
+  <view class="grid">
+    <view v-for="(p,i) in modelValue" :key="`${i}`" class="cell">
+      <image class="img" :src="p" @click="preview(i)" />
+      <button class="del" size="mini" @click="remove(i)">删除</button>
+    </view>
+    <slot></slot>
+  </view>
+</template>
+
+<script lang="uts">
+export default {
+  props: {
+    modelValue: { type: Array, default: () => [] }
+  },
+  emits: ['update:modelValue'],
+  setup(props: Readonly<{ modelValue: Array<string> }>, ctx: SetupContext) {
+    function remove(i: number): void {
+      uni.showModal({
+        content: '确认删除该照片？',
+        success: (res) => {
+          if (res.confirm) {
+            const next = (props.modelValue as Array<string>).slice()
+            next.splice(i,1)
+            ctx.emit('update:modelValue', next)
+          }
+        }
+      })
+    }
+    function preview(i: number): void {
+      uni.previewImage({ current: i, urls: (props.modelValue as Array<string>) })
+    }
+    return { remove, preview }
+  }
+}
+</script>
+
+<style scoped>
+.grid{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px}
+.cell{display:flex;flex-direction:column;align-items:center}
+.img{width:84px;height:84px;border-radius:8px;background:#f5f5f5}
+.del{margin-top:4px;color:#27c29c;border-color:#27c29c}
+</style>

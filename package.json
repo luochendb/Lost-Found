@@ -1,0 +1,16 @@
+{
+  "name": "lost-and-found-module",
+  "version": "0.1.0",
+  "description": "失物招领模块（uni-app-x）",
+  "uni-app-x": {
+    "module": {
+      "name": "失物招领模块",
+      "abbreviation": "lost",
+      "function": "发布失物/寻物、认领闭环、消息、招领点管理",
+      "entry": "pages/lost/list/index",
+      "dependencies": ["uni-app-x@3.9.0+"],
+      "deployMode": { "standalone": true, "mainProject": true },
+      "miniProgramConfig": { "appid": "", "permission": ["scope.userLocation"] }
+    }
+  }
+}
