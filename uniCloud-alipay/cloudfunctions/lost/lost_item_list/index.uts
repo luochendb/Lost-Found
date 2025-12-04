@@ -1,0 +1,8 @@
+import { ApiResult, LostItem } from '../../../types/lost/types.uts'
+export async function main(event: UTSJSONObject): Promise<ApiResult<Array<LostItem>>> {
+  try {
+    return { code: 0, msg: 'ok', data: [] }
+  } catch (e) {
+    return { code: 500, msg: 'lost_500: 列表查询失败' }
+  }
+}

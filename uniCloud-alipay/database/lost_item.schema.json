@@ -1,0 +1,25 @@
+{
+  "bsonType": "object",
+  "required": ["name", "status"],
+  "properties": {
+    "name": { "bsonType": "string" },
+    "brand": { "bsonType": "string" },
+    "displayAddress": { "bsonType": "string" },
+    "point_id": { "bsonType": "string" },
+    "pointName": { "bsonType": "string" },
+    "status": { "bsonType": "int" },
+    "type1": { "bsonType": "string" },
+    "type2": { "bsonType": "string" },
+    "photos": { "bsonType": "array", "items": { "bsonType": "string" } },
+    "features": { "bsonType": "array", "items": { "bsonType": "string" } },
+    "created_at": { "bsonType": "date" },
+    "user_id": { "bsonType": "string" }
+  },
+  "indexes": [
+    { "name": "idx_status", "fields": { "status": 1 } },
+    { "name": "idx_point", "fields": { "point_id": 1 } },
+    { "name": "idx_type1", "fields": { "type1": 1 } },
+    { "name": "idx_created", "fields": { "created_at": -1 } },
+    { "name": "idx_user", "fields": { "user_id": 1 } }
+  ]
+}

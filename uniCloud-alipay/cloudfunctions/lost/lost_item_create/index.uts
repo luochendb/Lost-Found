@@ -1,0 +1,15 @@
+import { ApiResult, LostItem } from '../../../types/lost/types.uts'
+import { getUserPerms, assertLogin } from '../../../common/perm.uts'
+export async function main(event: UTSJSONObject): Promise<ApiResult<LostItem>> {
+  try {
+    const user:any = uniCloud.getCurrentUser()
+    const uid:string = String(user?.uid ?? '')
+    assertLogin(uid)
+    await getUserPerms(uid)
+    return { code: 0, msg: 'ok', data: ({} as LostItem) }
+  } catch (e) {
+    const code:any = (String(e) === 'lost_401') ? 401 : 400
+    const msg:string = (code === 401) ? 'lost_401: 未登录' : 'lost_400: 参数错误'
+    return { code, msg }
+  }
+}

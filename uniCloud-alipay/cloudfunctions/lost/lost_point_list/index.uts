@@ -1,0 +1,8 @@
+import { ApiResult, LostPoint } from '../../../types/lost/types.uts'
+export async function main(event: UTSJSONObject): Promise<ApiResult<Array<LostPoint>>> {
+  try {
+    return { code: 0, msg: 'ok', data: [] }
+  } catch (e) {
+    return { code: 500, msg: 'lost_500: 查询招领点失败' }
+  }
+}

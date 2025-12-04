@@ -1,0 +1,16 @@
+export async function getUserPerms(uid:string): Promise<Array<string>> {
+  const db:any = uniCloud.database()
+  const res:any = await db.collection('user_permission').where({ user_id: uid }).get()
+  const perms:Array<string> = []
+  const list:any = res?.data ?? []
+  for (let i:number = 0; i < list.length; i++) { perms.push(String(list[i].permission_code)) }
+  return perms
+}
+
+export function hasPerm(perms:Array<string>, code:string): boolean { return perms.indexOf(code) >= 0 }
+
+export function assertLogin(uid:string): void { if (!uid || uid.length === 0) { throw 'lost_401' } }
+
+export function assertPerm(perms:Array<string>, code:string): void { if (!hasPerm(perms, code)) { throw 'lost_403' } }
+
+export function assertOwner(uid:string, owner:string): void { if (uid !== owner) { throw 'lost_403' } }
