@@ -1,0 +1,10 @@
+const blocked: Array<string> = ['转账','付款','红包']
+
+export function sanitizeMessage(text: string): { allowed: boolean, msg: string } {
+  for (let i = 0; i < blocked.length; i++) {
+    if (text.indexOf(blocked[i]) >= 0) {
+      return { allowed: false, msg: '包含支付相关关键词，请私下协商' }
+    }
+  }
+  return { allowed: true, msg: 'ok' }
+}

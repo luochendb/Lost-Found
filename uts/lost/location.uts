@@ -1,0 +1,33 @@
+import { LostLocation, ApiResult } from '../../types/lost/types.uts'
+
+export async function getCurrentLocation(): Promise<ApiResult<LostLocation>> {
+  return await new Promise((resolve) => {
+    uni.getLocation({
+      type: 'gcj02',
+      success: (res) => {
+        const loc: LostLocation = { lng: Number(res.longitude), lat: Number(res.latitude), address: '' }
+        resolve({ code: 0, msg: 'ok', data: loc })
+      },
+      fail: (err) => {
+        resolve({ code: 1, msg: '[失物模块] 获取定位失败，请检查权限' })
+      }
+    })
+  })
+}
+
+export async function reverseGeocode(loc: LostLocation): Promise<ApiResult<string>> {
+  // 占位：后续接入高德逆地理编码，当前返回坐标文案
+  const text = `(${loc.lng},${loc.lat})`
+  return { code: 0, msg: 'ok', data: text }
+}
+
+export function openNavigation(name: string, loc: LostLocation): ApiResult<void> {
+  const sys = uni.getSystemInfoSync()
+  // 统一使用 openLocation，平台内部做适配
+  try {
+    uni.openLocation({ latitude: loc.lat, longitude: loc.lng, name })
+    return { code: 0, msg: 'ok' }
+  } catch (e) {
+    return { code: 1, msg: '[失物模块] 导航打开失败' }
+  }
+}

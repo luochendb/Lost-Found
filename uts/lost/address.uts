@@ -1,0 +1,16 @@
+export function maskAddress(full: string): string {
+  // 简单模糊策略：仅保留区/商圈级别：示例输入“北京市朝阳区国贸CBDXX路” → 输出“朝阳区国贸附近”
+  if (full.length == 0) return ''
+  let hint = full
+  const idx1 = hint.indexOf('区')
+  const idx2 = hint.indexOf('镇')
+  const split = idx1 >= 0 ? idx1 : (idx2 >= 0 ? idx2 : -1)
+  if (split >= 0) {
+    const prefix = hint.substring(0, split + 1)
+    // 商圈简单抓取后续2-4字
+    const rest = hint.substring(split + 1)
+    const biz = rest.length >= 2 ? rest.substring(0, Math.min(4, rest.length)) : ''
+    return `${prefix}${biz}附近`
+  }
+  return full
+}

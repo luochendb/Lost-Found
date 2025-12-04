@@ -1,0 +1,37 @@
+export type LostItem = { id:string, name:string, brand:string, displayAddress:string, createdAtText?:string, pointName?:string, photos:Array<string>, status:number, type1?:string, type2?:string }
+export type LostPoint = { id:string, name:string, addr?:string, openTime?:string }
+export type Resp<T> = { code:number|string, msg:string, data?:T }
+
+import { listItemsLocal, getItemLocal, createItemLocal, listPointsLocal, listAnnounceLocal } from './local.uts'
+export const useLocal:boolean = true
+
+export async function callCloud<T>(name:string, data:UTSJSONObject): Promise<Resp<T>> {
+  const res:any = await uniCloud.callFunction({ name, data })
+  return res as Resp<T>
+}
+
+export async function listItems(params:UTSJSONObject): Promise<Resp<{ items:Array<LostItem>, total:number }>> {
+  if (useLocal) return await listItemsLocal(params)
+  return await callCloud<{ items:Array<LostItem>, total:number }>('lost_item_list', params)
+}
+
+export async function getItem(id:string): Promise<Resp<LostItem>> {
+  if (useLocal) return await getItemLocal(id)
+  return await callCloud<LostItem>('lost_item_detail', { id })
+}
+
+export async function createItem(payload:UTSJSONObject): Promise<Resp<{ id:string }>> {
+  if (useLocal) return await createItemLocal(payload)
+  return await callCloud<{ id:string }>('lost_item_create', payload)
+}
+
+export async function listPoints(): Promise<Resp<{ points:Array<LostPoint> }>> {
+  if (useLocal) return await listPointsLocal()
+  return await callCloud<{ points:Array<LostPoint> }>('lost_point_list', {})
+}
+
+export async function listAnnounce(): Promise<Resp<{ announces:Array<{ id:string, content:string, weight:number }> }>> {
+  if (useLocal) return await listAnnounceLocal()
+  // 云函数未提供时返回空
+  return { code: 0, msg: 'ok', data: { announces: [] } }
+}

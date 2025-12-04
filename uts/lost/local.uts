@@ -1,0 +1,139 @@
+import { LostItem, LostPoint, Resp } from './api.uts'
+
+type ListResp = { items:Array<LostItem>, total:number }
+type PointsResp = { points:Array<LostPoint> }
+type AnnouncesResp = { announces:Array<{ id:string, content:string, weight:number }> }
+
+let cacheItems:Array<LostItem> = []
+let cachePoints:Array<LostPoint> = []
+let cacheAnnounces:Array<{ id:string, content:string, weight:number }> = []
+
+async function fetchJson<T>(file:string): Promise<T> {
+  return await new Promise<T>((resolve, reject) => {
+    try {
+      uni.request({ url: `/static/data/${file}`, method:'GET', dataType:'json', success: (res:any) => {
+        resolve(res.data as T)
+      }, fail: (err:any) => { reject(err) } })
+    } catch (e:any) { reject(e) }
+  })
+}
+
+export async function listItemsLocal(params:UTSJSONObject): Promise<Resp<ListResp>> {
+  try {
+    if (cacheItems.length === 0) {
+      const data:any = await fetchJson<any>('lost_item.json')
+      cacheItems = (data.items as Array<LostItem>) ?? []
+      const appended:any = uni.getStorageSync('lost_items_append')
+      if (appended && appended.items) {
+        const arr:Array<LostItem> = appended.items as Array<LostItem>
+        cacheItems = cacheItems.concat(arr)
+      }
+    }
+    const keyword:string = String(params['keyword'] ?? '')
+    const status:number = Number(params['status'] ?? 0)
+    const type1:string = String(params['type1'] ?? '')
+    const pointId:string = String(params['point_id'] ?? '')
+    const timeRangeDays:number = Number(params['timeRangeDays'] ?? 0)
+    const page:number = Math.max(1, Number(params['page'] ?? 1))
+    const pageSize:number = Math.min(50, Math.max(1, Number(params['pageSize'] ?? 20)))
+    const offset:number = Math.max(0, Number(params['offset'] ?? -1))
+    const limit:number = Math.min(50, Math.max(1, Number(params['limit'] ?? -1)))
+
+    const now:number = Date.now()
+    const filtered:Array<LostItem> = []
+    for (let i:number = 0; i < cacheItems.length; i++) {
+      const it:LostItem = cacheItems[i]
+      let ok:boolean = true
+      if (keyword.length>0) {
+        const text:string = `${it.name} ${it.brand} ${it.displayAddress} ${it.pointName} ${String(it.type1 ?? '')} ${String(it.type2 ?? '')} ${(it as any).features ? ((it as any).features as Array<string>).join(' ') : ''}`
+        const t:string = text.toLowerCase()
+        const k:string = keyword.toLowerCase()
+        ok = ok && (t.indexOf(k) >= 0)
+      }
+      if (status > 0) ok = ok && (it.status === status)
+      if (type1.length>0) ok = ok && (String(it.type1 ?? '') === type1)
+      if (pointId.length>0) ok = ok && (String((it as any).point_id ?? '') === pointId)
+      if (timeRangeDays > 0) {
+        const t:number = Date.parse(String(it.createdAtText ?? ''))
+        ok = ok && (t >= (now - timeRangeDays * 24 * 60 * 60 * 1000))
+      }
+      if (ok) filtered.push(it)
+    }
+    const total:number = filtered.length
+    const useOffset:boolean = (offset >= 0 && limit > 0)
+    const start:number = useOffset ? offset : ((page - 1) * pageSize)
+    const end:number = Math.min(total, start + (useOffset ? limit : pageSize))
+    const items:Array<LostItem> = filtered.slice(start, end)
+    return { code: 0, msg: 'ok', data: { items, total } }
+  } catch (e:any) {
+    return { code: 'lost_500', msg: '本地读取失败' }
+  }
+}
+
+export async function getItemLocal(id:string): Promise<Resp<LostItem>> {
+  try {
+    if (cacheItems.length === 0) {
+      const data:any = await fetchJson<any>('lost_item.json')
+      cacheItems = (data.items as Array<LostItem>) ?? []
+    }
+    for (let i:number = 0; i < cacheItems.length; i++) { if (String(cacheItems[i].id) === id) return { code: 0, msg: 'ok', data: cacheItems[i] } }
+    const appended:any = uni.getStorageSync('lost_items_append')
+    if (appended && appended.items) {
+      const arr:Array<LostItem> = appended.items as Array<LostItem>
+      for (let i:number = 0; i < arr.length; i++) { if (String(arr[i].id) === id) return { code: 0, msg: 'ok', data: arr[i] } }
+    }
+    return { code: 'lost_404', msg: '未找到' }
+  } catch (e:any) {
+    return { code: 'lost_500', msg: '本地读取失败' }
+  }
+}
+
+export async function createItemLocal(payload:UTSJSONObject): Promise<Resp<{ id:string }>> {
+  try {
+    const id:string = `loc_${Date.now()}`
+    const it:LostItem = {
+      id,
+      name: String(payload['name'] ?? ''),
+      brand: String(payload['brand'] ?? ''),
+      displayAddress: String(payload['address'] ?? ''),
+      createdAtText: String(payload['dateLabel'] ?? ''),
+      pointName: '',
+      photos: (payload['photos'] as Array<string>) ?? [],
+      status: 1,
+      type1: String(payload['type1'] ?? ''),
+      type2: String(payload['type2'] ?? '')
+    }
+    const appended:any = uni.getStorageSync('lost_items_append')
+    let arr:Array<LostItem> = []
+    if (appended && appended.items) arr = appended.items as Array<LostItem>
+    arr.push(it)
+    uni.setStorageSync('lost_items_append', { items: arr })
+    return { code: 0, msg: 'ok', data: { id } }
+  } catch (e:any) {
+    return { code: 'lost_500', msg: '本地写入失败' }
+  }
+}
+
+export async function listPointsLocal(): Promise<Resp<PointsResp>> {
+  try {
+    if (cachePoints.length === 0) {
+      const data:any = await fetchJson<any>('lost_point.json')
+      cachePoints = (data.points as Array<LostPoint>) ?? []
+    }
+    return { code: 0, msg: 'ok', data: { points: cachePoints } }
+  } catch (e:any) {
+    return { code: 'lost_500', msg: '本地读取失败' }
+  }
+}
+
+export async function listAnnounceLocal(): Promise<Resp<AnnouncesResp>> {
+  try {
+    if (cacheAnnounces.length === 0) {
+      const data:any = await fetchJson<any>('lost_announce.json')
+      cacheAnnounces = (data.announces as Array<{ id:string, content:string, weight:number }>) ?? []
+    }
+    return { code: 0, msg: 'ok', data: { announces: cacheAnnounces } }
+  } catch (e:any) {
+    return { code: 'lost_500', msg: '本地读取失败' }
+  }
+}
