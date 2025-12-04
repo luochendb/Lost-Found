@@ -1,0 +1,7 @@
+{
+  "items": [
+    { "id": "i1", "name": "棕色真皮钱包", "brand": "无", "features": ["皮质","棕色"], "photos": ["/static/logo.png"], "displayAddress": "图书馆二楼阅览室", "createdAtText": "2024-01-15 14:30", "status": 1, "point_id": "p2", "pointName": "图书馆失物招领处", "type1": "随身物品", "type2": "钱包" },
+    { "id": "i2", "name": "AirPods Pro 耳机", "brand": "Apple", "features": ["白色","降噪"], "photos": ["/static/logo.png"], "displayAddress": "学生食堂一楼", "createdAtText": "2024-01-15 12:20", "status": 2, "point_id": "p1", "pointName": "第一食堂失物招领处", "type1": "电子设备", "type2": "耳机" },
+    { "id": "i3", "name": "校园一卡通", "brand": "无", "features": ["学生卡"], "photos": ["/static/logo.png"], "displayAddress": "教学楼 A 区", "createdAtText": "2024-01-15 10:15", "status": 3, "point_id": "p1", "pointName": "第一食堂失物招领处", "type1": "证件类", "type2": "校园卡" }
+  ]
+}
