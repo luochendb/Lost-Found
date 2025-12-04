@@ -1,0 +1,38 @@
+<template>
+  <view class="container">
+    <text class="title">敏感物品待审</text>
+    <scroll-view class="list" scroll-y>
+      <view v-for="it in queue" :key="it.id" class="card">
+        <text class="name">{{ it.name }} · {{ it.typePath }}</text>
+        <view class="actions">
+          <button type="primary" size="mini" @click="approve(it.id)">通过</button>
+          <button type="warn" size="mini" @click="reject(it.id)">驳回</button>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</template>
+
+<script lang="uts">
+import { ref } from 'vue'
+
+type AuditItem = { id:string, name:string, typePath:string }
+
+export default {
+  setup() {
+    const queue = ref<Array<AuditItem>>([])
+    function approve(id:string): void { /* 接入 lost_audit_process */ }
+    function reject(id:string): void { /* 接入 lost_audit_process */ }
+    return { queue, approve, reject }
+  }
+}
+</script>
+
+<style scoped>
+.container{display:flex;flex-direction:column;padding:12px}
+.title{font-size:16px;color:#333;margin-bottom:8px}
+.list{height:calc(100vh - 80px)}
+.card{display:flex;flex-direction:row;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid #f0f0f0}
+.name{font-size:14px;color:#333}
+.actions{display:flex;flex-direction:row;gap:8px}
+</style>

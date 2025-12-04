@@ -1,0 +1,42 @@
+<template>
+  <view class="container">
+    <text class="title">我的发布与认领</text>
+    <scroll-view class="list" scroll-y>
+      <view v-for="it in myItems" :key="it.id" class="row">
+        <text>{{ it.name }}</text>
+        <button size="mini" @click="revoke(it.id)" v-show="it.canRevoke">撤销</button>
+      </view>
+    </scroll-view>
+    <text class="title">我的认领</text>
+    <scroll-view class="list" scroll-y>
+      <view v-for="cl in myClaims" :key="cl.id" class="row">
+        <text>{{ cl.itemName }}</text>
+        <button size="mini" @click="cancel(cl.id)" v-show="cl.canCancel">取消认领</button>
+      </view>
+    </scroll-view>
+  </view>
+</template>
+
+<script lang="uts">
+import { ref } from 'vue'
+
+type MyItem = { id:string, name:string, canRevoke:boolean }
+type MyClaim = { id:string, itemName:string, canCancel:boolean }
+
+export default {
+  setup() {
+    const myItems = ref<Array<MyItem>>([])
+    const myClaims = ref<Array<MyClaim>>([])
+    function revoke(id:string): void { /* 接入撤销 */ }
+    function cancel(id:string): void { /* 接入取消认领 */ }
+    return { myItems, myClaims, revoke, cancel }
+  }
+}
+</script>
+
+<style scoped>
+.container{display:flex;flex-direction:column;padding:12px}
+.title{font-size:16px;color:#333;margin:8px 0}
+.list{height:200px}
+.row{display:flex;flex-direction:row;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid #f0f0f0}
+</style>

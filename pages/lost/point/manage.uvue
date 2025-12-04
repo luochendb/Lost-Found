@@ -1,0 +1,44 @@
+<template>
+  <view class="container">
+    <text class="title">招领点物品管理</text>
+    <view class="toolbar">
+      <button size="mini" @click="batchMark(1)">批量标记已认领</button>
+      <button size="mini" @click="exportCsv">导出清单</button>
+    </view>
+    <scroll-view class="list" scroll-y>
+      <view v-for="it in pointItems" :key="it.id" class="row">
+        <text>{{ it.name }}</text>
+        <picker :range="statusOptions" @change="e=>mark(it.id, Number(e.detail.value))">
+          <view class="picker">{{ statusLabel(it.status) }}</view>
+        </picker>
+      </view>
+    </scroll-view>
+  </view>
+</template>
+
+<script lang="uts">
+import { ref } from 'vue'
+
+type PointItem = { id:string, name:string, status:number }
+
+export default {
+  setup() {
+    const pointItems = ref<Array<PointItem>>([])
+    const statusOptions = ref<Array<string>>(['待认领','已认领'])
+    function statusLabel(s:number): string { return s==0?'待认领':'已认领' }
+    function mark(id:string, s:number): void { /* 接入 lost_item_update_status */ }
+    function batchMark(s:number): void { /* 批量标记 */ }
+    function exportCsv(): void { /* 接入 lost_item_export_csv */ }
+    return { pointItems, statusOptions, statusLabel, mark, batchMark, exportCsv }
+  }
+}
+</script>
+
+<style scoped>
+.container{display:flex;flex-direction:column;padding:12px}
+.title{font-size:16px;color:#333;margin-bottom:8px}
+.toolbar{display:flex;flex-direction:row;gap:8px;margin-bottom:8px}
+.list{height:calc(100vh - 120px)}
+.row{display:flex;flex-direction:row;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid #f0f0f0}
+.picker{padding:6px;border:1px solid #eee;border-radius:6px}
+</style>

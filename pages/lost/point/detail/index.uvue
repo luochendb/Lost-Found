@@ -1,0 +1,183 @@
+<template>
+  <view class="container">
+    <view class="head">
+      <image class="icon" :src="icon" />
+      <view class="meta">
+        <text class="name">{{ name }}</text>
+        <text class="addr">地址：{{ addr }}</text>
+        <view class="actions">
+          <button class="btn" @click="openMap">打开地图</button>
+          <button class="btn" @click="call">联系负责人</button>
+        </view>
+      </view>
+    </view>
+
+    <view class="info">
+      <text class="label">工作时间</text>
+      <text class="value">{{ openTime }}</text>
+      <text class="label">负责人</text>
+      <text class="value">{{ contactName }} {{ contactPhone }}</text>
+    </view>
+
+    <view class="section-head"><text class="section-title">该点位物品</text></view>
+    <scroll-view class="list" scroll-y @scrolltolower="loadMore">
+      <view v-for="item in items" :key="item.id" class="card" @click="toDetail(item.id)">
+        <image class="thumb" :src="item.photos.length>0?item.photos[0]:icon" />
+        <view class="info-row">
+          <text class="item-name">{{ item.name }}</text>
+          <text class="item-addr">{{ item.displayAddress }}</text>
+          <text class="item-meta">{{ item.createdAtText }} · {{ item.pointName }}</text>
+        </view>
+      </view>
+      <view v-if="loaded && items.length===0" class="empty"><text class="empty-text">暂无数据</text></view>
+    </scroll-view>
+  </view>
+</template>
+
+<script lang="uts">
+import { ref } from 'vue'
+import { listPoints, listItems } from '../../../../uts/lost/api.uts'
+
+type ItemCard = { id:string, name:string, photos:string[], displayAddress:string, createdAtText:string, pointName:string }
+
+export default {
+  setup() {
+    const icon = '/static/logo.png'
+    const pointId = ref<string>('')
+    const name = ref<string>('')
+    const addr = ref<string>('')
+    const openTime = ref<string>('')
+    const contactName = ref<string>('暂无')
+    const contactPhone = ref<string>('')
+    const lat = ref<number>(0)
+    const lng = ref<number>(0)
+    const items = ref<Array<ItemCard>>([])
+    const loaded = ref<boolean>(false)
+    const offset = ref<number>(0)
+    const total = ref<number>(0)
+    const hasMore = ref<boolean>(false)
+    const initialLimit = 10
+    const appendLimit = 6
+
+    async function loadPoint(): Promise<void> {
+      try {
+        const pr = await listPoints()
+        if (pr.code === 0 && pr.data) {
+          const arr = pr.data.points
+          for (let i:number = 0; i < arr.length; i++) {
+            const p = arr[i]
+            if (String(p.id) === pointId.value) {
+              name.value = String(p.name)
+              addr.value = String(p.addr ?? '')
+              openTime.value = String(p.openTime ?? '')
+              break
+            }
+          }
+        }
+      } catch (e:any) {}
+    }
+    async function resetAndFetch(): Promise<void> {
+      try {
+        loaded.value = false
+        offset.value = 0
+        const resp = await listItems({ point_id: pointId.value, offset: offset.value, limit: initialLimit })
+        if (resp.code === 0 && resp.data) {
+          const arr:any = resp.data.items
+          const mapped:Array<ItemCard> = []
+          for (let i:number = 0; i < arr.length; i++) {
+            const it:any = arr[i]
+            mapped.push({
+              id: String(it.id),
+              name: String(it.name),
+              photos: (it.photos as Array<string>) ?? [],
+              displayAddress: String(it.displayAddress ?? ''),
+              createdAtText: String(it.createdAtText ?? ''),
+              pointName: String(it.pointName ?? '')
+            })
+          }
+          items.value = mapped
+          total.value = Number(resp.data.total ?? mapped.length)
+          hasMore.value = (items.value.length < total.value)
+          loaded.value = true
+        }
+      } catch (e:any) { uni.showToast({ title:'[失物模块] 暂存点物品加载失败', icon:'none' }) }
+    }
+    async function loadMore(): Promise<void> {
+      if (!hasMore.value) return
+      try {
+        offset.value = items.value.length
+        const resp = await listItems({ point_id: pointId.value, offset: offset.value, limit: appendLimit })
+        if (resp.code === 0 && resp.data) {
+          const arr:any = resp.data.items
+          const mapped:Array<ItemCard> = []
+          for (let i:number = 0; i < arr.length; i++) {
+            const it:any = arr[i]
+            mapped.push({
+              id: String(it.id),
+              name: String(it.name),
+              photos: (it.photos as Array<string>) ?? [],
+              displayAddress: String(it.displayAddress ?? ''),
+              createdAtText: String(it.createdAtText ?? ''),
+              pointName: String(it.pointName ?? '')
+            })
+          }
+          items.value = items.value.concat(mapped)
+          total.value = Number(resp.data.total ?? total.value)
+          hasMore.value = (items.value.length < total.value)
+        }
+      } catch (e:any) {}
+    }
+    function openMap(): void {
+      if (lat.value !== 0 && lng.value !== 0) {
+        uni.openLocation({ latitude: lat.value, longitude: lng.value, name: name.value, address: addr.value })
+      } else {
+        uni.showToast({ title:'缺少坐标，暂无法跳转地图', icon:'none' })
+      }
+    }
+    function call(): void {
+      if (contactPhone.value && contactPhone.value.length > 0) {
+        uni.makePhoneCall({ phoneNumber: contactPhone.value })
+      } else {
+        uni.showToast({ title:'暂无负责人联系方式', icon:'none' })
+      }
+    }
+    function toDetail(id:string): void { uni.navigateTo({ url: `/pages/lost/detail/index?id=${id}` }) }
+    return { icon, name, addr, openTime, contactName, contactPhone, items, loaded, loadMore, openMap, call, toDetail, loadPoint, resetAndFetch }
+  }
+  ,
+  onLoad(query: UTSJSONObject): void {
+    const id:string = String(query['id'] ?? '')
+    // @ts-ignore
+    this.pointId = id
+    // @ts-ignore
+    this.loadPoint()
+    // @ts-ignore
+    this.resetAndFetch()
+  }
+}
+</script>
+
+<style scoped>
+.container{display:flex;flex-direction:column;padding:12px}
+.head{display:flex;flex-direction:row;align-items:center}
+.icon{width:48px;height:48px;border-radius:12px;background:#e6f4ea}
+.meta{display:flex;flex-direction:column;margin-left:10px}
+.name{font-size:16px;color:#333}
+.addr{font-size:12px;color:#666;margin-top:4px}
+.actions{display:flex;flex-direction:row;gap:8px;margin-top:8px}
+.btn{color:#27c29c;border-color:#27c29c}
+.info{display:flex;flex-direction:column;margin-top:12px}
+.label{font-size:12px;color:#999;margin-top:6px}
+.value{font-size:12px;color:#333;margin-top:4px}
+.section-head{display:flex;flex-direction:row;align-items:center;margin:12px 0}
+.section-title{font-size:14px;color:#333}
+.list{height:calc(100vh - 220px)}
+.card{display:flex;flex-direction:row;padding:10px;border-bottom:1px solid #f0f0f0}
+.thumb{width:72px;height:72px;border-radius:6px;background:#e6f4ea}
+.info-row{display:flex;flex-direction:column;margin-left:10px}
+.item-name{font-size:16px;color:#27c29c}
+.item-addr{font-size:12px;color:#666;margin-top:4px}
+.item-meta{font-size:12px;color:#999;margin-top:4px}
+.empty{display:flex;justify-content:center;align-items:center;padding:20px}
+.empty-text{font-size:12px;color:#999}
+</style>

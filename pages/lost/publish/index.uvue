@@ -1,0 +1,165 @@
+<template>
+  <view class="container">
+    <view class="step">
+      <text class="step-title">步骤一：选择类型</text>
+      <picker :range="typeLevel1" @change="onType1">
+        <view class="picker">{{ type1Label }}</view>
+      </picker>
+      <picker :range="typeLevel2" @change="onType2">
+        <view class="picker">{{ type2Label }}</view>
+      </picker>
+    </view>
+
+    <view class="step">
+      <text class="step-title">步骤二：填写关键信息</text>
+      <input class="input" v-model.trim="name" placeholder="物品名称（例：黑色钱包）" />
+      <input class="input" v-model.trim="brand" placeholder="品牌/型号（无则填无）" />
+      <textarea class="input" v-model.trim="feature1" placeholder="关键特征（至少 1 项）" />
+      <view class="photos">
+        <button class="btn" @click="chooseImage">上传照片（最多3张）</button>
+        <photo-grid v-model="photos">
+          
+        </photo-grid>
+      </view>
+    </view>
+
+    <view class="step">
+      <text class="step-title">步骤三：地点与提交</text>
+      <view class="row">
+        <button @click="getLocation">获取当前位置</button>
+        <text class="addr">{{ address }}</text>
+      </view>
+      <picker :range="dateOptions" @change="onDateChange">
+        <view class="picker">{{ dateLabel }}</view>
+      </picker>
+      <view class="row">
+        <switch :checked="托管点" @change="onPointSwitch" />
+        <text>托管招领点（按距离推荐）</text>
+      </view>
+      <button class="submit" type="primary" @click="submit">确认发布</button>
+      <view class="optional">
+        <picker :range="qualityOptions" @change="onQuality">
+          <view class="picker">{{ qualityLabel }}</view>
+        </picker>
+        <input class="input" v-model.trim="remark" placeholder="备注（≤50字）" />
+      </view>
+    </view>
+  </view>
+</template>
+
+<script lang="uts">
+import { ref, computed } from 'vue'
+import PhotoGrid from '../../../components/lost/photo-grid.uvue'
+import { createItem } from '../../../uts/lost/api.uts'
+
+export default {
+  components:{ PhotoGrid },
+  setup() {
+    const mode = ref<number>(0) // 0=失物,1=寻物
+    const typeLevel1 = ref<Array<string>>(['证件类','电子设备','衣物','随身物品','其他'])
+    const typeLevel2 = ref<Array<string>>([])
+    const type1Index = ref<number>(0)
+    const type2Index = ref<number>(0)
+
+    const name = ref<string>('')
+    const brand = ref<string>('无')
+    const feature1 = ref<string>('')
+    const photos = ref<Array<string>>([])
+
+    const address = ref<string>('')
+    const dateOptions = ref<Array<string>>(['今天','昨天','选择日期'])
+    const dateIndex = ref<number>(0)
+    const 托管点 = ref<boolean>(false)
+    const qualityOptions = ref<Array<string>>(['完好','全新','轻微破损','严重破损'])
+    const qualityIndex = ref<number>(0)
+    const remark = ref<string>('')
+
+    const type1Label = computed<string>(() => typeLevel1.value[type1Index.value])
+    const type2Label = computed<string>(() => typeLevel2.value.length>0?typeLevel2.value[type2Index.value]:'请选择二级类型')
+    const dateLabel = computed<string>(() => dateOptions.value[dateIndex.value])
+    const qualityLabel = computed<string>(() => qualityOptions.value[qualityIndex.value])
+
+    function onType1(e:any): void {
+      type1Index.value = Number(e.detail.value)
+      // 根据一级类型填充二级
+      const i = type1Index.value
+      if (i==0) typeLevel2.value = ['身份证','银行卡','驾照']
+      else if (i==1) typeLevel2.value = ['手机','耳机','电脑']
+      else if (i==2) typeLevel2.value = ['外套','裤子','鞋子']
+      else if (i==3) typeLevel2.value = ['钥匙','钱包','背包']
+      else typeLevel2.value = ['其他']
+      type2Index.value = 0
+    }
+    function onType2(e:any): void { type2Index.value = Number(e.detail.value) }
+    function chooseImage(): void {
+      uni.chooseImage({ count: Math.max(0, 3-photos.value.length), success: (res) => {
+        const paths = (res.tempFilePaths as Array<string>)
+        photos.value = photos.value.concat(paths).slice(0,3)
+      }})
+    }
+    function getLocation(): void {
+      uni.getLocation({type:'gcj02', success: (res) => {
+        address.value = `当前位置(${res.longitude},${res.latitude})`
+      }, fail: (err) => {
+        uni.showToast({ title:'[失物模块] 获取定位失败，请检查权限', icon:'none' })
+      }})
+    }
+    function onDateChange(e:any): void { dateIndex.value = Number(e.detail.value) }
+    function onPointSwitch(e:any): void { 托管点.value = Boolean(e.detail.value) }
+    function onQuality(e:any): void { qualityIndex.value = Number(e.detail.value) }
+    async function submit(): Promise<void> {
+      try {
+        const payload: UTSJSONObject = {
+          mode: mode.value,
+          type1: type1Label.value,
+          type2: type2Label.value,
+          name: name.value,
+          brand: brand.value,
+          features: [feature1.value],
+          photos: photos.value,
+          address: address.value,
+          dateLabel: dateLabel.value,
+          onlyPoint: 托管点.value,
+          quality: qualityLabel.value,
+          remark: remark.value
+        }
+        const resp = await createItem(payload)
+        if (resp.code === 0 && resp.data) {
+          const id:string = String(resp.data.id)
+          uni.showToast({ title:'发布成功', icon:'none' })
+          uni.navigateTo({ url: `/pages/lost/detail/index?id=${id}` })
+        } else {
+          uni.showToast({ title:'[失物模块] 发布失败', icon:'none' })
+        }
+      } catch (e:any) {
+        uni.showToast({ title:'[失物模块] 发布失败', icon:'none' })
+      }
+    }
+
+    return { mode, typeLevel1, typeLevel2, type1Label, type2Label, onType1, onType2,
+      name, brand, feature1, photos, chooseImage,
+      address, dateOptions, dateLabel, onDateChange, 托管点, onPointSwitch, getLocation,
+      qualityOptions, qualityLabel, onQuality, remark, submit }
+  },
+  onLoad(query: UTSJSONObject): void {
+    const m = String(query['mode'] ?? 'lost')
+    // 0=失物,1=寻物
+    // @ts-ignore
+    this.mode = (m=='find') ? 1 : 0
+  }
+}
+</script>
+
+<style scoped>
+.container{display:flex;flex-direction:column;padding:12px}
+.step{display:flex;flex-direction:column;margin-bottom:12px}
+.step-title{font-size:14px;color:#27c29c;margin-bottom:6px}
+.picker{padding:8px;border:1px solid #e6f4ea;border-radius:6px;margin-bottom:6px}
+.input{border:1px solid #e6f4ea;border-radius:6px;padding:8px;margin-bottom:6px}
+.photos{display:flex;flex-direction:column}
+.btn{color:#27c29c;border-color:#27c29c}
+.row{display:flex;flex-direction:row;align-items:center;gap:8px;margin-top:6px}
+.addr{font-size:12px;color:#27c29c}
+.submit{margin-top:10px}
+.optional{display:flex;flex-direction:column;margin-top:8px}
+</style>

@@ -1,0 +1,86 @@
+<template>
+  <view class="container">
+    <image class="hero" :src="hero" />
+    <view class="info-card">
+      <text class="title">{{ name }}</text>
+      <text class="sub">{{ brand }}</text>
+      <view class="meta-row">
+        <text class="meta">{{ displayAddress }}</text>
+        <text class="meta">{{ timeText }}</text>
+      </view>
+      <view class="tags" v-show="pointName.length>0">
+        <view class="tag-chip">{{ pointName }}</view>
+      </view>
+    </view>
+    <action-bar :showApply="true" :showNav="true" :showChat="canChat" @apply="applyClaim" @nav="openNav" @chat="openChat" />
+  </view>
+</template>
+
+<script lang="uts">
+import { ref } from 'vue'
+import ActionBar from '../../../components/lost/action-bar.uvue'
+import { getItem } from '../../../uts/lost/api.uts'
+
+export default {
+  components:{ ActionBar },
+  setup() {
+    const hero = ref<string>('/static/logo.png')
+    const name = ref<string>('')
+    const brand = ref<string>('')
+    const displayAddress = ref<string>('')
+    const timeText = ref<string>('')
+    const pointName = ref<string>('')
+    const canChat = ref<boolean>(false)
+    let itemId: string = ''
+
+    async function load(id: string): Promise<void> {
+      itemId = id
+      try {
+        const resp = await getItem(id)
+        if (resp.code === 0 && resp.data) {
+          const it:any = resp.data
+          hero.value = (it.photos && it.photos.length>0) ? String(it.photos[0]) : '/static/logo.png'
+          name.value = String(it.name ?? '')
+          brand.value = String(it.brand ?? '')
+          displayAddress.value = String(it.displayAddress ?? '')
+          timeText.value = String(it.createdAtText ?? '')
+          pointName.value = String(it.pointName ?? '')
+          canChat.value = true
+        }
+      } catch (e:any) {
+        uni.showToast({ title:'[失物模块] 加载详情失败', icon:'none' })
+      }
+    }
+    function applyClaim(): void {
+      uni.navigateTo({ url: `/pages/lost/claim/apply?id=${itemId}` })
+    }
+    function openNav(): void {
+      // 后续接入导航工具
+    }
+    function openChat(): void {
+      uni.navigateTo({ url: `/pages/lost/notice/index?convItemId=${itemId}` })
+    }
+
+    return { hero, name, brand, displayAddress, timeText, pointName, canChat, load, applyClaim, openNav, openChat }
+  },
+  onLoad(query: UTSJSONObject): void {
+    const id = String(query["id"] ?? '')
+    if (id.length>0) {
+      // @ts-ignore
+      this.load(id)
+    }
+  }
+}
+</script>
+
+<style scoped>
+.container{display:flex;flex-direction:column;background:#ffffff}
+.hero{width:100%;height:220px;background:#fafafa}
+.info-card{display:flex;flex-direction:column;background:#ffffff;border:1px solid #e6f4ea;border-radius:12px;padding:12px;margin:12px}
+.title{font-size:20px;color:#27c29c}
+.sub{font-size:14px;color:#666;margin-top:6px}
+.meta-row{display:flex;flex-direction:row;justify-content:space-between;align-items:center;margin-top:8px}
+.meta{font-size:12px;color:#666}
+.tags{display:flex;flex-direction:row;align-items:center;gap:8px;margin-top:8px}
+.tag-chip{padding:6px 10px;border:1px solid #e6f4ea;border-radius:12px;color:#27c29c;background:#e6f4ea}
+</style>

@@ -1,0 +1,146 @@
+<template>
+  <view class="container">
+    <filter-bar :keyword="kw" :typeIndex="typeIdx" @update:keyword="onKeywordUpdate" @change="onFilterChange" />
+    <scroll-view class="list" scroll-y @scrolltolower="loadMore">
+      <view v-for="item in items" :key="item.id" class="card" @click="toDetail(item.id)">
+        <image class="thumb" :src="item.photos.length>0?item.photos[0]:placeholder" />
+        <view class="info">
+          <text class="name">{{ item.name }}</text>
+          <text class="addr">{{ item.displayAddress }}</text>
+          <text class="meta">{{ item.createdAtText }} · {{ item.pointName }}</text>
+        </view>
+      </view>
+      <view v-if="loaded && items.length===0" class="empty"><text class="empty-text">暂无数据</text></view>
+    </scroll-view>
+  </view>
+</template>
+
+<script lang="uts">
+import { ref, onMounted } from 'vue'
+import FilterBar from '../../../components/lost/filter-bar.uvue'
+import { listItems } from '../../../uts/lost/api.uts'
+
+type ItemCard = {
+  id: string,
+  name: string,
+  photos: string[],
+  displayAddress: string,
+  createdAtText: string,
+  pointName: string
+}
+
+export default {
+  components:{ FilterBar },
+  setup() {
+    const items = ref<Array<ItemCard>>([])
+    const loaded = ref<boolean>(false)
+    const kw = ref<string>('')
+    const typeIdx = ref<number>(0)
+    const statusIdx = ref<number>(0)
+    const offset = ref<number>(0)
+    const total = ref<number>(0)
+    const hasMore = ref<boolean>(false)
+    const initialLimit = 10
+    const appendLimit = 6
+    const placeholder = '/static/logo.png'
+    function onKeywordUpdate(v:string): void { kw.value = v }
+    async function onFilterChange(payload: UTSJSONObject): Promise<void> {
+      kw.value = String(payload['keyword'] ?? kw.value)
+      typeIdx.value = Number(payload['typeIndex'] ?? typeIdx.value)
+      await resetAndFetch()
+    }
+    async function resetAndFetch(): Promise<void> {
+      try {
+        loaded.value = false
+        const typeOptions:Array<string> = ['全部类型','证件类','电子设备','衣物','随身物品','其他']
+        const statusMap:Array<number> = [0,1,2,3]
+        const type1:string = typeIdx.value===0 ? '' : typeOptions[typeIdx.value]
+        const status:number = statusMap[statusIdx.value]
+        offset.value = 0
+        const resp = await listItems({ keyword: kw.value, type1, timeRangeDays: 0, status, offset: offset.value, limit: initialLimit })
+        if (resp.code === 0 && resp.data) {
+          const arr:any = resp.data.items
+          const mapped:Array<ItemCard> = []
+          for (let i:number = 0; i < arr.length; i++) {
+            const it:any = arr[i]
+            mapped.push({
+              id: String(it.id),
+              name: String(it.name),
+              photos: (it.photos as Array<string>) ?? [],
+              displayAddress: String(it.displayAddress ?? ''),
+              createdAtText: String(it.createdAtText ?? ''),
+              pointName: String(it.pointName ?? '')
+            })
+          }
+          items.value = mapped
+          total.value = Number(resp.data.total ?? mapped.length)
+          hasMore.value = (items.value.length < total.value)
+          loaded.value = true
+        }
+      } catch (e:any) {
+        uni.showToast({ title:'[失物模块] 列表加载失败', icon:'none' })
+      }
+    }
+    async function loadMore(): Promise<void> {
+      if (!hasMore.value) return
+      try {
+        const typeOptions:Array<string> = ['全部类型','证件类','电子设备','衣物','随身物品','其他']
+        const statusMap:Array<number> = [0,1,2,3]
+        const type1:string = typeIdx.value===0 ? '' : typeOptions[typeIdx.value]
+        const status:number = statusMap[statusIdx.value]
+        offset.value = items.value.length
+        const resp = await listItems({ keyword: kw.value, type1, timeRangeDays: 0, status, offset: offset.value, limit: appendLimit })
+        if (resp.code === 0 && resp.data) {
+          const arr:any = resp.data.items
+          const mapped:Array<ItemCard> = []
+          for (let i:number = 0; i < arr.length; i++) {
+            const it:any = arr[i]
+            mapped.push({
+              id: String(it.id),
+              name: String(it.name),
+              photos: (it.photos as Array<string>) ?? [],
+              displayAddress: String(it.displayAddress ?? ''),
+              createdAtText: String(it.createdAtText ?? ''),
+              pointName: String(it.pointName ?? '')
+            })
+          }
+          items.value = items.value.concat(mapped)
+          total.value = Number(resp.data.total ?? total.value)
+          hasMore.value = (items.value.length < total.value)
+        }
+      } catch (e:any) {}
+    }
+    
+    function toDetail(id: string): void { uni.navigateTo({ url: `/pages/lost/detail/index?id=${id}` }) }
+    return { items, loaded, kw, typeIdx, statusIdx, placeholder, onKeywordUpdate, onFilterChange, resetAndFetch, loadMore, toDetail }
+  }
+  ,
+  onLoad(query: UTSJSONObject): void {
+    let keyword:string = String(query['keyword'] ?? '')
+    try { keyword = decodeURIComponent(keyword) } catch (e:any) {}
+    const typeIndex:number = Number(query['typeIndex'] ?? 0)
+    const statusIndex:number = Number(query['statusIndex'] ?? 0)
+    // @ts-ignore
+    this.kw = keyword
+    // @ts-ignore
+    this.typeIdx = typeIndex
+    // @ts-ignore
+    this.statusIdx = statusIndex
+    // @ts-ignore
+    this.resetAndFetch()
+  }
+}
+</script>
+
+<style scoped>
+.container{display:flex;flex-direction:column;padding:12px}
+.list{height:calc(100vh - 80px);margin-top:8px}
+.card{display:flex;flex-direction:row;padding:10px;border-bottom:1px solid #f0f0f0}
+.thumb{width:72px;height:72px;border-radius:6px;background:#e6f4ea}
+.info{display:flex;flex-direction:column;margin-left:10px}
+.name{font-size:16px;color:#27c29c}
+.addr{font-size:12px;color:#666;margin-top:4px}
+.meta{font-size:12px;color:#999;margin-top:4px}
+.empty{display:flex;justify-content:center;align-items:center;padding:20px}
+.empty-text{font-size:12px;color:#999}
+</style>

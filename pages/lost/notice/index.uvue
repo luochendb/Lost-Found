@@ -1,0 +1,65 @@
+<template>
+  <view class="container">
+    <view class="tabs">
+      <button :type="tab==0?'primary':'default'" @click="tab=0">通知</button>
+      <button :type="tab==1?'primary':'default'" @click="tab=1">沟通</button>
+    </view>
+    <scroll-view v-show="tab==0" class="list" scroll-y>
+      <view v-for="n in notices" :key="n.id" class="notice">
+        <text class="title">{{ n.title }}</text>
+        <text class="content">{{ n.content }}</text>
+      </view>
+    </scroll-view>
+    <view v-show="tab==1" class="chat">
+      <scroll-view class="chat-list" scroll-y>
+        <view v-for="m in messages" :key="m.id" class="msg">
+          <text class="sender">{{ m.senderName }}:</text>
+          <text class="text">{{ m.content }}</text>
+        </view>
+      </scroll-view>
+      <view class="input-row">
+        <input class="input" v-model.trim="draft" placeholder="仅限时间/地点细节" />
+        <button type="primary" @click="send">发送</button>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script lang="uts">
+import { ref } from 'vue'
+
+type Notice = { id:string, title:string, content:string }
+type Msg = { id:string, senderName:string, content:string }
+
+export default {
+  setup() {
+    const tab = ref<number>(0)
+    const notices = ref<Array<Notice>>([])
+    const messages = ref<Array<Msg>>([])
+    const draft = ref<string>('')
+
+    function send(): void {
+      if (draft.value.length==0) return
+      // 后续接入关键词屏蔽与 lost_message_send
+      draft.value = ''
+    }
+    return { tab, notices, messages, draft, send }
+  }
+}
+</script>
+
+<style scoped>
+.container{display:flex;flex-direction:column;height:100vh}
+.tabs{display:flex;flex-direction:row;gap:8px;padding:8px}
+.list{flex:1}
+.notice{padding:10px;border-bottom:1px solid #f0f0f0}
+.title{font-size:14px;color:#333}
+.content{font-size:12px;color:#666;margin-top:4px}
+.chat{display:flex;flex-direction:column;flex:1}
+.chat-list{flex:1}
+.msg{padding:10px}
+.sender{font-size:12px;color:#999}
+.text{font-size:14px;color:#333}
+.input-row{display:flex;flex-direction:row;gap:8px;padding:8px}
+.input{flex:1;border:1px solid #eee;border-radius:6px;padding:8px}
+</style>

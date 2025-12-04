@@ -1,0 +1,47 @@
+<template>
+  <view class="container">
+    <text class="title">申请认领</text>
+    <input class="input" v-model.trim="name" placeholder="姓名" />
+    <input class="input" v-model.trim="mobile" placeholder="手机号" />
+    <input class="input" v-model.trim="proof" placeholder="核验证明（填写与发布一致的1项特征）" />
+    <picker :range="slotOptions" @change="onSlotChange">
+      <view class="picker">{{ slotLabel }}</view>
+    </picker>
+    <input class="input" v-model.trim="note" placeholder="备注（如需晚1小时到）" />
+    <button type="primary" @click="submit">提交申请</button>
+  </view>
+</template>
+
+<script lang="uts">
+import { ref, computed } from 'vue'
+
+export default {
+  setup() {
+    const name = ref<string>('')
+    const mobile = ref<string>('')
+    const proof = ref<string>('')
+    const note = ref<string>('')
+    const slotOptions = ref<Array<string>>(['今天 14:00-16:00','今天 16:00-18:00','明天 14:00-16:00'])
+    const slotIndex = ref<number>(2)
+    const slotLabel = computed<string>(() => slotOptions.value[slotIndex.value])
+    let itemId: string = ''
+
+    function onSlotChange(e:any): void { slotIndex.value = Number(e.detail.value) }
+    function submit(): void {
+      // 后续接入 lost_claim_submit
+      uni.showToast({ title:'申请已提交（占位）', icon:'none' })
+    }
+    return { name, mobile, proof, note, slotOptions, slotLabel, onSlotChange, submit }
+  },
+  onLoad(query: UTSJSONObject): void {
+    itemId = String(query['id'] ?? '')
+  }
+}
+</script>
+
+<style scoped>
+.container{display:flex;flex-direction:column;padding:12px}
+.title{font-size:16px;color:#333;margin-bottom:8px}
+.input{border:1px solid #eee;border-radius:6px;padding:8px;margin-bottom:8px}
+.picker{padding:8px;border:1px solid #eee;border-radius:6px;margin-bottom:8px}
+</style>

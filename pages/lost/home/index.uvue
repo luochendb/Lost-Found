@@ -1,0 +1,259 @@
+<template>
+  <view class="container">
+    <view v-show="showFixedTabs" class="fixed-tabs">
+      <view v-for="t in tabs" :key="t.key" class="tab" :class="activeTab===t.key ? 'tab-active' : ''" @click="setTab(t.key)">
+        <text class="tab-text">{{ t.label }}</text>
+  </view>
+    <view class="fab-bar">
+      <button class="fab" @click="toPublish">发布</button>
+    </view>
+  </view>
+
+    <scroll-view id="mainScroll" class="main" scroll-y show-scrollbar="false" @scroll="onScroll">
+      <view class="top">
+        <text class="title">失物邮局</text>
+        <input class="search" v-model.trim="keyword" placeholder="搜索名称/特征/地点" @focus="toSearch" />
+      </view>
+
+      <swiper class="announce-swiper" vertical autoplay interval="3000" circular>
+        <swiper-item v-for="p in announcePairs" :key="p.key">
+          <view class="announce-item">
+            <text class="announce-text">{{ p.a }}</text>
+            <text class="announce-text">{{ p.b }}</text>
+          </view>
+        </swiper-item>
+      </swiper>
+
+      <view class="section-head"><text class="section-title">暂存点信息</text></view>
+      <scroll-view id="storage" class="storage-carousel" direction="horizontal" enable-flex="true" show-scrollbar="false" scroll-with-animation="true">
+        <view class="card-row" :style="{ width: rowWidth }">
+          <view v-for="c in cards" :key="c.id" class="card" @click="toPoint(c.id)">
+            <image class="card-icon" src="../../../static/logo.png" />
+            <text class="card-name">{{ c.title }}</text>
+            <text class="card-time">工作时间：周一至周五 9:00-17:00</text>
+          </view>
+        </view>
+      </scroll-view>
+
+
+      <view class="list-wrap">
+        <view id="listTabs" class="tabs sentinel">
+          <view v-for="t in tabs" :key="t.key" class="tab" :class="activeTab===t.key ? 'tab-active' : ''" @click="setTab(t.key)">
+            <text class="tab-text">{{ t.label }}</text>
+          </view>
+        </view>
+        <view class="list" v-if="!loading">
+          <view v-for="it in displayItems" :key="it.id" class="item" @click="toDetail(it.id)">
+            <image class="item-img" :src="it.img" />
+            <view class="item-info">
+              <text class="item-name">{{ it.name }}</text>
+              <text class="item-addr">拾获地点：{{ it.addr }}</text>
+              <text class="item-addr">暂存点：{{ it.store }}</text>
+              <text class="item-meta">发布时间：{{ it.time }}</text>
+              <view class="item-action">
+                <button class="chip">{{ statusLabel(it.status) }}</button>
+              </view>
+            </view>
+          </view>
+          <view v-if="displayItems.length===0" class="empty">
+            <text class="empty-text">暂无数据</text>
+          </view>
+          <view class="more-wrap">
+            <button class="more-btn" @click="toAll">查看更多</button>
+          </view>
+        </view>
+        <view class="list" v-else>
+          <view class="skeleton-item" v-for="n in 3" :key="`sk-${n}`"></view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</template>
+
+<script lang="uts">
+import { ref, computed, onMounted } from 'vue'
+import { listItems, listPoints, listAnnounce } from '../../../uts/lost/api.uts'
+
+type Tab = { key:string, label:string }
+type HomeCard = { id:string, title:string }
+type HomeItem = { id:string, img:string, name:string, addr:string, store:string, time:string, status:number }
+
+export default {
+  setup() {
+    const keyword = ref<string>('')
+    const tabs = ref<Array<Tab>>([
+      { key:'all', label:'全部' },
+      { key:'seek', label:'寻物' },
+      { key:'claim', label:'招领' },
+      { key:'done', label:'完成' }
+    ])
+    const activeTab = ref<string>('all')
+    const showFixedTabs = ref<boolean>(false)
+    const sentinelTop = ref<number>(240)
+
+    const cards = ref<Array<HomeCard>>([])
+    const rowWidth = computed<string>(() => {
+      const n:number = cards.value.length
+      const cardW:number = 300
+      const gap:number = 10
+      const total:number = n * cardW + (n > 0 ? (n - 1) * gap : 0)
+      return `${total}px`
+    })
+    
+
+    const announces = ref<Array<string>>([])
+    type AnnPair = { key:string, a:string, b:string }
+    const announcePairs = computed<Array<AnnPair>>(() => {
+      const res:Array<AnnPair> = []
+      const arr:Array<string> = announces.value
+      for (let i:number = 0; i < arr.length; i++) {
+        const a:string = arr[i]
+        const b:string = arr[(i + 1) % arr.length]
+        res.push({ key: `${i}`, a, b })
+      }
+      return res
+    })
+
+    const sixItems = ref<Array<HomeItem>>([])
+    const loading = ref<boolean>(false)
+
+    const displayItems = computed<Array<HomeItem>>(() => {
+      const tab:string = activeTab.value
+      const arr:Array<HomeItem> = sixItems.value
+      if (tab === 'all') return arr
+      if (tab === 'seek') {
+        const res:Array<HomeItem> = []
+        for (let i:number = 0; i < arr.length; i++) { const it:HomeItem = arr[i]; if (it.status === 1) res.push(it) }
+        return res
+      }
+      if (tab === 'claim') {
+        const res:Array<HomeItem> = []
+        for (let i:number = 0; i < arr.length; i++) { const it:HomeItem = arr[i]; if (it.status === 2) res.push(it) }
+        return res
+      }
+      const res:Array<HomeItem> = []
+      for (let i:number = 0; i < arr.length; i++) { const it:HomeItem = arr[i]; if (it.status === 3) res.push(it) }
+      return res
+    })
+
+    function setTab(k:string): void { activeTab.value = k }
+    function onScroll(e:any): void {
+      const top:number = e?.detail?.scrollTop ?? 0
+      showFixedTabs.value = top >= sentinelTop.value
+    }
+    
+    function statusLabel(s:number): string {
+      if (s === 1) return '寻物中'
+      if (s === 2) return '招领中'
+      return '已完成'
+    }
+    function toAll(): void { uni.navigateTo({ url: '/pages/lost/all/index' }) }
+    function toSearch(): void { uni.navigateTo({ url: '/pages/lost/search/index' }) }
+    function toPublish(): void { uni.navigateTo({ url: '/pages/lost/publish/index' }) }
+    function toPoint(id:string): void { uni.navigateTo({ url: `/pages/lost/point/detail/index?id=${id}` }) }
+    function toDetail(id:string): void { uni.navigateTo({ url: `/pages/lost/detail/index?id=${id}` }) }
+
+    async function loadHome(): Promise<void> {
+      try {
+        loading.value = true
+        const pr = await listPoints()
+        if (pr.code === 0 && pr.data) {
+          const pts = pr.data.points
+          const mapped:Array<HomeCard> = []
+          for (let i:number = 0; i < pts.length; i++) {
+            const p = pts[i]
+            mapped.push({ id: String(p.id), title: String(p.name) })
+          }
+          cards.value = mapped
+        }
+        const ar = await listAnnounce()
+        if (ar.code === 0 && ar.data) {
+          const list = ar.data.announces
+          const texts:Array<string> = []
+          for (let i:number = 0; i < list.length; i++) { texts.push(String(list[i].content)) }
+          announces.value = texts
+        }
+        const ir = await listItems({ offset: 0, limit: 8 })
+        if (ir.code === 0 && ir.data) {
+          const arr = ir.data.items
+          const mapped:Array<HomeItem> = []
+          for (let i:number = 0; i < arr.length; i++) {
+            const it:any = arr[i]
+            const img:string = (it.photos && it.photos.length>0) ? String(it.photos[0]) : '../../../static/logo.png'
+            const name:string = String(it.name)
+            const addr:string = String(it.displayAddress)
+            const store:string = String(it.pointName ?? '')
+            const time:string = String(it.createdAtText ?? '')
+            const status:number = Number(it.status)
+            mapped.push({ id:String(it.id), img, name, addr, store, time, status })
+          }
+          sixItems.value = mapped
+        }
+      } catch (e:any) {
+        uni.showToast({ title:'[失物模块] 数据加载失败', icon:'none' })
+      }
+      finally { loading.value = false }
+    }
+    onMounted(():void => {
+      try {
+        const q = uni.createSelectorQuery()
+        q.select('#listTabs').boundingClientRect((rt:any) => {
+          q.select('#mainScroll').boundingClientRect((rm:any) => {
+            if (rt && rm) {
+              const diff:number = (rt.top as number) - (rm.top as number)
+              if (diff > 0) sentinelTop.value = diff
+            }
+          }).exec()
+        }).exec()
+        loadHome()
+      } catch (err) {
+        loadHome()
+      }
+    })
+    return { keyword, tabs, activeTab, showFixedTabs, cards, rowWidth, announcePairs, displayItems, loading, setTab, onScroll, statusLabel, toAll, toSearch, toPublish, toPoint, toDetail }
+  }
+}
+</script>
+
+<style scoped>
+.container{display:flex;flex-direction:column;padding:12px;background:#ffffff}
+.fixed-tabs{display:flex;flex-direction:row;background:#f5f5f5;border-radius:12px;padding:4px;margin-bottom:8px}
+.main{flex:1}
+.top{display:flex;flex-direction:row;align-items:center;gap:10px}
+.title{font-size:16px;color:#333}
+.search{flex:1;border:1px solid #e6f4ea;padding:8px;border-radius:8px}
+.tabs{display:flex;flex-direction:row;background:#f5f5f5;border-radius:12px;padding:4px;margin:12px 0}
+.tab{flex:1;display:flex;justify-content:center;align-items:center;border-radius:8px;padding:8px}
+.tab-text{font-size:14px;color:#666}
+.tab-active{background:#27c29c}
+.tab-active .tab-text{color:#ffffff}
+.announce-swiper{height:72px;margin:8px 0}
+.announce-item{display:flex;flex-direction:column;justify-content:center;gap:6px;background:#e6f4ea;border-radius:8px;padding:8px;height:72px}
+.announce-text{font-size:12px;color:#27c29c}
+.section-head{display:flex;flex-direction:row;align-items:center;margin:8px 0}
+.section-title{font-size:14px;color:#333}
+.storage-carousel{height:140px;width:100%;padding:2px 0}
+.card-row{display:flex;flex-direction:row;flex-wrap:nowrap;height:100%}
+.card{flex:0 0 300px;display:flex;flex-direction:column;justify-content:center;height:100%;background:#ffffff;border:1px solid #e6f4ea;border-radius:12px;padding:8px;margin-right:10px}
+.card-icon{width:32px;height:32px;border-radius:8px;background:#e6f4ea}
+.card-name{font-size:14px;color:#333;margin-top:6px}
+.card-time{font-size:12px;color:#999;margin-top:4px}
+.list-wrap{display:flex;flex-direction:column;margin-top:4px}
+.list{display:flex;flex-direction:column;margin-top:8px}
+.item{display:flex;flex-direction:row;align-items:center;border:1px solid #f0f0f0;border-radius:8px;padding:10px;margin-bottom:10px}
+.item-img{width:64px;height:64px;border-radius:8px;background:#e6f4ea;margin-right:10px}
+.item-info{display:flex;flex-direction:column;flex:1}
+.item-name{font-size:16px;color:#333}
+.item-addr{font-size:12px;color:#666;margin-top:4px}
+.item-meta{font-size:12px;color:#999;margin-top:4px}
+.item-action{display:flex;flex-direction:row;margin-top:8px}
+.chip{color:#27c29c;border-color:#27c29c}
+.fab-bar{display:flex;flex-direction:row;justify-content:flex-end;padding:12px}
+.fab{color:#ffffff;background:#27c29c;border-color:#27c29c;border-radius:24px;padding:8px 16px}
+.empty{display:flex;justify-content:center;align-items:center;padding:20px}
+.empty-text{font-size:12px;color:#999}
+.skeleton-item{height:84px;border-radius:8px;background:#f5f5f5;margin-bottom:10px}
+.more-wrap{display:flex;justify-content:center;align-items:center;margin-top:8px}
+.more-btn{color:#27c29c;border-color:#27c29c}
+
+</style>

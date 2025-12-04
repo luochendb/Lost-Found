@@ -1,0 +1,113 @@
+<template>
+  <view class="container">
+    <view class="search-bar">
+      <input class="input" v-model.trim="keyword" placeholder="输入关键词" @confirm="onSubmit" />
+      <button class="btn" @click="onSubmit">搜索</button>
+    </view>
+
+    <view class="section">
+      <view class="section-head"><text class="section-title">历史搜索</text><button size="mini" @click="clearHistory">清空</button></view>
+      <view class="chips">
+        <view v-for="h in history" :key="h" class="chip" @click="applyHistory(h)">{{ h }}</view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-head"><text class="section-title">热搜</text></view>
+      <view class="chips">
+        <view v-for="t in hot" :key="t" class="chip" @click="applyHistory(t)">{{ t }}</view>
+      </view>
+    </view>
+
+  </view>
+</template>
+
+<script lang="uts">
+import { ref, onMounted } from 'vue'
+import FilterBar from '../../../components/lost/filter-bar.uvue'
+import { listAnnounce } from '../../../uts/lost/api.uts'
+
+export default {
+  components:{ FilterBar },
+  setup() {
+    const keyword = ref<string>('')
+    const history = ref<Array<string>>([])
+    const hot = ref<Array<string>>([])
+    const typeIndex = ref<number>(0)
+    const timeIndex = ref<number>(0)
+    const statusIndex = ref<number>(0)
+
+    let type1:string = ''
+    let timeRangeDays:number = 7
+    let status:number = 0
+
+    function loadHistory(): void {
+      try {
+        const data:any = uni.getStorageSync('lost_search_history')
+        const arr:Array<string> = (data as Array<string>) ?? []
+        history.value = arr
+      } catch (e:any) { history.value = [] }
+    }
+    function saveHistory(q:string): void {
+      if (q.length < 1) return
+      const set = new Set<string>(history.value)
+      set.add(q)
+      const arr:Array<string> = Array.from(set)
+      if (arr.length > 10) arr.splice(10)
+      history.value = arr
+      uni.setStorageSync('lost_search_history', arr)
+    }
+    async function loadHot(): Promise<void> {
+      try {
+        const resp = await listAnnounce()
+        if (resp.code === 0 && resp.data) {
+          const texts:Array<string> = []
+          const list = resp.data.announces
+          for (let i:number = 0; i < list.length; i++) { texts.push(String(list[i].content)) }
+          hot.value = texts
+        }
+      } catch (e:any) {}
+    }
+
+    function onSubmit(): void {
+      if (keyword.value.length < 1) return
+      saveHistory(keyword.value)
+      uni.navigateTo({ url: `/pages/lost/all/index?keyword=${keyword.value}&typeIndex=${typeIndex.value}&statusIndex=${statusIndex.value}` })
+    }
+    function applyHistory(q:string): void {
+      keyword.value = q
+      onSubmit()
+    }
+    function clearHistory(): void {
+      history.value = []
+      uni.removeStorageSync('lost_search_history')
+    }
+    function onFilterChange(payload: UTSJSONObject): void {
+      const typeOptions:Array<string> = ['全部类型','证件类','电子设备','衣物','随身物品','其他']
+      const timeOptionsDays:Array<number> = [7,3,1]
+      const statusMap:Array<number> = [0,1,2,3]
+      typeIndex.value = Number(payload['typeIndex'] ?? 0)
+      timeIndex.value = Number(payload['timeIndex'] ?? 0)
+      statusIndex.value = Number(payload['statusIndex'] ?? 0)
+      type1 = typeIndex.value===0 ? '' : typeOptions[typeIndex.value]
+      timeRangeDays = timeOptionsDays[timeIndex.value]
+      status = statusMap[statusIndex.value]
+    }
+
+    onMounted(():void => { loadHistory(); loadHot() })
+    return { keyword, history, hot, typeIndex, timeIndex, statusIndex, onSubmit, applyHistory, clearHistory, onFilterChange }
+  }
+}
+</script>
+
+<style scoped>
+.container{display:flex;flex-direction:column;padding:12px}
+.search-bar{display:flex;flex-direction:row;align-items:center;gap:8px}
+.input{flex:1;border:1px solid #e6f4ea;border-radius:8px;padding:8px}
+.btn{color:#27c29c;border-color:#27c29c}
+.section{display:flex;flex-direction:column;margin-top:12px}
+.section-head{display:flex;flex-direction:row;justify-content:space-between;align-items:center}
+.section-title{font-size:14px;color:#333}
+.chips{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{padding:6px 10px;border:1px solid #e6f4ea;border-radius:12px;color:#27c29c}
+</style>
